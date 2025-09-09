@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Speech-to-Text Transcriber</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #6e8efb, #a777e3);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-weight: 300;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .upload-section, .record-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        h2 {
+            color: #6e8efb;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h2 i {
+            font-size: 1.5rem;
+        }
+        
+        .file-upload {
+            border: 2px dashed #a777e3;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .file-upload:hover {
+            background: #f8f6ff;
+        }
+        
+        .file-upload i {
+            font-size: 3rem;
+            color: #a777e3;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(90deg, #6e8efb, #a777e3);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-record {
+            background: linear-gradient(90deg, #ff5e7d, #ff9500);
+        }
+        
+        .btn-processing {
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+        }
+        
+        .recording-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .pulse {
+            width: 15px;
+            height: 15px;
+            background: #ff5e7d;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(0.9);
+                box-shadow: 0 0 0 0 rgba(255, 94, 125, 0.7);
+            }
+            
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(255, 94, 125, 0);
+            }
+            
+            100% {
+                transform: scale(0.9);
+                box-shadow: 0 0 0 0 rgba(255, 94, 125, 0);
+            }
+        }
+        
+        .result-section {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+        }
+        
+        .result-content {
+            margin-top: 20px;
+        }
+        
+        .transcript {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        
+        .enhanced {
+            margin-top: 25px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 0.9rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .loader {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #6e8efb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Speech-to-Text Transcriber</h1>
+            <p class="subtitle">Upload an audio file or record speech - AI will transcribe and enhance the text</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <h2><i class="fas fa-file-audio"></i> Upload Audio</h2>
+                <div class="file-upload" id="dropZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag & drop your MP3 file here</p>
+                    <p>or</p>
+                    <button class="btn btn-secondary" id="browseBtn">Browse Files</button>
+                    <input type="file" id="fileInput" class="file-input" accept="audio/mp3,audio/*">
+                </div>
+                <p>Supported format: MP3, WAV, M4A</p>
+                <button class="btn" id="uploadBtn">Process Uploaded File</button>
+            </div>
+            
+            <div class="record-section">
+                <h2><i class="fas fa-microphone"></i> Record Audio</h2>
+                <p>Record audio directly from your microphone</p>
+                
+                <div class="recording-indicator" id="recordingIndicator" style="display: none;">
+                    <div class="pulse"></div>
+                    <span>Recording in progress...</span>
+                </div>
+                
+                <button class="btn btn-record" id="recordBtn">Start Recording</button>
+                <button class="btn btn-processing" id="processRecording" style="display: none;">Process Recording</button>
+            </div>
+            
+            <div class="result-section">
+                <h2><i class="fas fa-align-left"></i> Transcription Results</h2>
+                <div class="result-content">
+                    <h3>Original Transcription</h3>
+                    <div class="transcript" id="originalTranscript">
+                        Your transcription will appear here...
+                    </div>
+                    
+                    <div class="enhanced">
+                        <h3>AI-Enhanced Transcription</h3>
+                        <div class="transcript" id="enhancedTranscript">
+                            Enhanced text with filled gaps will appear here...
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn"><i class="fas fa-download"></i> Download Text</button>
+                        <button class="btn btn-secondary"><i class="fas fa-copy"></i> Copy to Clipboard</button>
+                        <button class="btn btn-secondary"><i class="fas fa-share-alt"></i> Share</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Powered by AI Whisper Technology &bull; This is a demo interface</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const browseBtn = document.getElementById('browseBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const dropZone = document.getElementById('dropZone');
+            const recordBtn = document.getElementById('recordBtn');
+            const processRecording = document.getElementById('processRecording');
+            const recordingIndicator = document.getElementById('recordingIndicator');
+            const originalTranscript = document.getElementById('originalTranscript');
+            const enhancedTranscript = document.getElementById('enhancedTranscript');
+            
+            // File upload handling
+            browseBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    const fileName = e.target.files[0].name;
+                    dropZone.innerHTML = `<i class="fas fa-file-audio"></i><p>Selected file: <strong>${fileName}</strong></p>`;
+                }
+            });
+            
+            // Drag and drop handling
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.background = '#f0f0ff';
+                dropZone.style.borderColor = '#6e8efb';
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.background = '';
+                dropZone.style.borderColor = '#a777e3';
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.background = '';
+                dropZone.style.borderColor = '#a777e3';
+                
+                if (e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    const fileName = e.dataTransfer.files[0].name;
+                    dropZone.innerHTML = `<i class="fas fa-file-audio"></i><p>Dropped file: <strong>${fileName}</strong></p>`;
+                }
+            });
+            
+            // Upload button handler
+            uploadBtn.addEventListener('click', () => {
+                if (!fileInput.files.length) {
+                    alert('Please select a file first');
+                    return;
+                }
+                
+                uploadBtn.innerHTML = '<span class="loader"></span> Processing...';
+                uploadBtn.disabled = true;
+                
+                // Simulate processing delay
+                setTimeout(() => {
+                    // These would be replaced with actual transcription results
+                    originalTranscript.innerHTML = "Okay, so um... I was thinking that we should... you know... maybe consider the... ah... alternative approach to the problem. The one that John mentioned last week?";
+                    
+                    enhancedTranscript.innerHTML = "Okay, so I was thinking that we should probably consider the alternative approach to the problem. The one that John mentioned last week?";
+                    
+                    uploadBtn.innerHTML = 'Process Uploaded File';
+                    uploadBtn.disabled = false;
+                }, 2500);
+            });
+            
+            // Recording functionality
+            let isRecording = false;
+            
+            recordBtn.addEventListener('click', () => {
+                if (!isRecording) {
+                    // Start recording
+                    isRecording = true;
+                    recordBtn.textContent = 'Stop Recording';
+                    recordBtn.classList.add('btn-processing');
+                    recordingIndicator.style.display = 'flex';
+                    processRecording.style.display = 'none';
+                } else {
+                    // Stop recording
+                    isRecording = false;
+                    recordBtn.textContent = 'Start Recording';
+                    recordBtn.classList.remove('btn-processing');
+                    recordingIndicator.style.display = 'none';
+                    processRecording.style.display = 'block';
+                }
+            });
+            
+            processRecording.addEventListener('click', () => {
+                processRecording.innerHTML = '<span class="loader"></span> Processing...';
+                processRecording.disabled = true;
+                
+                // Simulate processing delay
+                setTimeout(() => {
+                    // These would be replaced with actual transcription results
+                    originalTranscript.innerHTML = "The weather today is... um... really nice. I was thinking we could go for a... what's it called... a walk in the park? Maybe around... ah... 3 PM?";
+                    
+                    enhancedTranscript.innerHTML = "The weather today is really nice. I was thinking we could go for a walk in the park? Maybe around 3 PM?";
+                    
+                    processRecording.innerHTML = 'Process Recording';
+                    processRecording.disabled = false;
+                    processRecording.style.display = 'none';
+                }, 2500);
+            });
+        });
+    </script>
+</body>
+</html>
