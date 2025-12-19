@@ -349,8 +349,8 @@
                 }
             });
             
-            // Upload button handler
-            uploadBtn.addEventListener('click', () => {
+             // Upload button handler
+            uploadBtn.addEventListener('click', async () => {
                 if (!fileInput.files.length) {
                     alert('Please select a file first');
                     return;
@@ -359,16 +359,35 @@
                 uploadBtn.innerHTML = '<span class="loader"></span> Processing...';
                 uploadBtn.disabled = true;
                 
-                // Simulate processing delay
-                setTimeout(() => {
-                    // These would be replaced with actual transcription results
-                    originalTranscript.innerHTML = "Okay, so um... I was thinking that we should... you know... maybe consider the... ah... alternative approach to the problem. The one that John mentioned last week?";
+                try {
+                    // Create FormData to send the audio file
+                    const formData = new FormData();
+                    formData.append('audio', fileInput.files[0]);
                     
-                    enhancedTranscript.innerHTML = "Okay, so I was thinking that we should probably consider the alternative approach to the problem. The one that John mentioned last week?";
+                    // Send to backend
+                    const response = await fetch('http://localhost:8000/transcribe/', {
+                        method: 'POST',
+                        body: formData
+                    });
                     
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // Display results
+                    originalTranscript.innerHTML = result.original_transcript || 'No transcription available';
+                    enhancedTranscript.innerHTML = result.enhanced_transcript || 'No enhanced transcription available';
+                    
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    originalTranscript.innerHTML = 'Error processing file. Please try again.';
+                    enhancedTranscript.innerHTML = 'Error processing file. Please try again.';
+                } finally {
                     uploadBtn.innerHTML = 'Process Uploaded File';
                     uploadBtn.disabled = false;
-                }, 2500);
+                }
             });
             
             // Recording functionality
